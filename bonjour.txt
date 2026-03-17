@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Adrien raisseguier, fils de bruno raisseguier, élève mid de première 2 filière générale à LNDB dont les spés sont maths pc et nsi, dont le mot de passe téléphone est 100909, le code mail PapaMaman et le code ed 110115Romane et après jsp, Bosse
 Adrien raisseguier, fils de bruno raisseguier, élève mid de première 2 filière générale à LNDB dont les spés sont maths pc et nsi, dont le mot de passe téléphone est 100909, le code mail PapaMaman et le code ed 110115Romane et après jsp, Bosse
 Adrien raisseguier, fils de bruno raisseguier, élève mid de première 2 filière générale à LNDB dont les spés sont maths pc et nsi, dont le mot de passe téléphone est 100909, le code mail PapaMaman et le code ed 110115Romane et après jsp, Bosse
@@ -58,3 +59,6 @@ Adrien raisseguier, fils de bruno raisseguier, élève mid de première 2 filiè
 Adrien raisseguier, fils de bruno raisseguier, élève mid de première 2 filière générale à LNDB dont les spés sont maths pc et nsi, dont le mot de passe téléphone est 100909, le code mail PapaMaman et le code ed 110115Romane et après jsp, Bosse
 Adrien raisseguier, fils de bruno raisseguier, élève mid de première 2 filière générale à LNDB dont les spés sont maths pc et nsi, dont le mot de passe téléphone est 100909, le code mail PapaMaman et le code ed 110115Romane et après jsp, Bosse
 Adrien raisseguier, fils de bruno raisseguier, élève mid de première 2 filière générale à LNDB dont les spés sont maths pc et nsi, dont le mot de passe téléphone est 100909, le code mail PapaMaman et le code ed 110115Romane et après jsp, Bosse
+=======
+bonjour
+>>>>>>> b99567a70b3280b01d14195e7ddc3beff477b9f5
