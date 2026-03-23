@@ -1,1 +1,9 @@
 groupe composé du capitaine Adrien RESSEGUIER et de son second Esteban SOLANILLE
+
+Nous allons créer un mini jeu video avec 1 niveau de plateforme et de combat
+Le jeu sera pixelisé
+Notre personnage aura 5 coeurs, lorsqu il tombera, il y aura des pics et il perdra un coeur.
+Il y aura des ennemis sur la route, des squelettes, lorsqu ils taperont notre héros, il perdra un coeur et lorsqu ils seront tués, le personnage gagnera un coeur
+Il y aura un chekpoint
+Il y aura un boss à la fin du niveau 
+A la fin du niveau, le temps qu on a mis s affichera s affichera
