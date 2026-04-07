@@ -1,0 +1,194 @@
+using UnityEngine;
+
+public class SwordMobAI : MonoBehaviour
+{
+    [Header("Stats")]
+    public int maxHealth = 5;
+    private int currentHealth;
+    private bool isDead = false;
+
+    [Header("Movement")]
+    public float speed = 2f;
+    public Transform leftPatrolPoint;
+    public Transform rightPatrolPoint;
+    private bool movingRight = true;
+
+    [Header("Vision & Attack")]
+    public float detectionRange = 5f;  // portée de vision
+    public float attackRange = 1f;     // portée d'attaque
+    public int damage = 1;
+    public float attackCooldown = 1.5f;
+    private float attackTimer = 0f;
+    public Transform attackPoint;
+    public LayerMask playerLayer;
+
+    [Header("Prefabs")]
+    public GameObject heartPrefab;
+
+    [Header("Platform Detection")]
+    public Transform groundCheck;
+    public float groundCheckDistance = 0.1f;
+    public LayerMask groundLayer;
+
+    private Transform player;
+    private Animator anim;
+
+    void Awake()
+    {
+        currentHealth = maxHealth;
+        anim = GetComponent<Animator>();
+        player = GameObject.FindGameObjectWithTag("Player").transform;
+    }
+
+    void Update()
+    {
+        if (isDead || player == null) return;
+
+        attackTimer -= Time.deltaTime;
+
+        float distanceToPlayer = Vector2.Distance(transform.position, player.position);
+
+        bool playerInSight = false;
+
+        // Vérifie si le joueur est devant le mob et dans sa vision
+        if ((movingRight && player.position.x > transform.position.x) ||
+            (!movingRight && player.position.x < transform.position.x))
+        {
+            if (distanceToPlayer <= detectionRange)
+                playerInSight = true;
+        }
+
+        if (playerInSight)
+        {
+            // Se retourne vers le joueur si nécessaire
+            if ((movingRight && player.position.x < transform.position.x) ||
+                (!movingRight && player.position.x > transform.position.x))
+            {
+                movingRight = !movingRight;
+                Flip();
+            }
+
+            // Approche le joueur sans tomber
+            MoveTowards(player.position.x);
+
+            // Attaque si à portée
+            if (distanceToPlayer <= attackRange && attackTimer <= 0f)
+            {
+                Attack();
+            }
+        }
+        else
+        {
+            Patrol();
+        }
+    }
+
+    void MoveTowards(float targetX)
+    {
+        float dir = targetX > transform.position.x ? 1 : -1;
+
+        // Vérifie le sol avant de se déplacer
+        if (IsGroundAhead(dir))
+            transform.Translate(Vector2.right * dir * speed * Time.deltaTime);
+        else
+        {
+            // Si bord de plateforme, stop ou change de direction
+            movingRight = !movingRight;
+            Flip();
+        }
+    }
+
+    void Patrol()
+    {
+        float dir = movingRight ? 1 : -1;
+
+        if (IsGroundAhead(dir))
+            transform.Translate(Vector2.right * dir * speed * Time.deltaTime);
+        else
+        {
+            movingRight = !movingRight;
+            Flip();
+        }
+    }
+
+    bool IsGroundAhead(float direction)
+    {
+        Vector2 checkPos = new Vector2(groundCheck.position.x + direction * 0.1f, groundCheck.position.y);
+        RaycastHit2D hit = Physics2D.Raycast(checkPos, Vector2.down, groundCheckDistance, groundLayer);
+        return hit.collider != null;
+    }
+
+    void Attack()
+    {
+        if (anim != null) anim.SetTrigger("Attack");
+
+        Collider2D hit = Physics2D.OverlapCircle(attackPoint.position, attackRange, playerLayer);
+        if (hit != null)
+        {
+            hit.GetComponent<PlayerHealth>().TakeDamage(damage);
+        }
+
+        attackTimer = attackCooldown;
+    }
+
+    public void TakeDamage(int dmg)
+    {
+        if (isDead) return;
+
+        currentHealth -= dmg;
+
+        if (anim != null)
+            anim.SetTrigger("Hit");
+
+        // Se retourne vers le joueur s’il est touché derrière
+        if (player != null)
+        {
+            if ((movingRight && player.position.x < transform.position.x) ||
+                (!movingRight && player.position.x > transform.position.x))
+            {
+                movingRight = !movingRight;
+                Flip();
+            }
+        }
+
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
+    }
+
+    void Die()
+    {
+        isDead = true;
+
+        if (anim != null) anim.SetTrigger("Die");
+
+        if (heartPrefab != null)
+            Instantiate(heartPrefab, transform.position, Quaternion.identity);
+
+        this.enabled = false;
+        Destroy(gameObject, 1.5f);
+    }
+
+    void Flip()
+    {
+        Vector3 scale = transform.localScale;
+        scale.x *= -1;
+        transform.localScale = scale;
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        if (attackPoint != null)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(attackPoint.position, attackRange);
+        }
+
+        if (groundCheck != null)
+        {
+            Gizmos.color = Color.blue;
+            Gizmos.DrawLine(groundCheck.position, groundCheck.position + Vector3.down * groundCheckDistance);
+        }
+    }
+}
