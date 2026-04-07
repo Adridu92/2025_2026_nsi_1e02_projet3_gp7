@@ -1,75 +1,149 @@
 using UnityEngine;
+using UnityEngine.UI;
+using System.Collections;
 
-public class BossAttack : MonoBehaviour
+public class BossAI : MonoBehaviour
 {
+    [Header("Player")]
+    public Transform player;
+
+    [Header("Attack")]
+    public float meleeRange = 2f;
+    public float attackCooldown = 2f;
+
+    [Header("Health")]
+    public int maxHealth = 30;
+    private int currentHealth;
+    private bool isDead = false;
+    private bool hasSummoned = false;
+
+    [Header("UI")]
+    public Slider healthBar;
+
+    [Header("Prefabs")]
     public GameObject fireballPrefab;
-    public Transform firePoint;
-
-    public GameObject meleeHitbox;
-    public Transform meleePoint;
-
+    public GameObject meleeHitboxPrefab;
     public GameObject skeletonPrefab;
+
+    [Header("Points")]
+    public Transform firePoint;
+    public Transform meleePoint;
     public Transform leftSpawn;
     public Transform rightSpawn;
 
-    public void ChooseAttack()
-    {
-        int rand = Random.Range(0, 3);
+    private Animator anim;
+    private float cooldownTimer;
 
-        if (rand == 0)
-            RangedAttack();
-        else if (rand == 1)
-            MeleeAttack();
-        else
-            Summon();
+    void Start()
+    {
+        currentHealth = maxHealth;
+        anim = GetComponent<Animator>();
+
+        if (healthBar != null)
+        {
+            healthBar.maxValue = maxHealth;
+            healthBar.value = currentHealth;
+        }
     }
 
-    //  Attaque à distance
-    void RangedAttack()
+    void Update()
     {
-        GetComponent<Animator>().SetTrigger("Ranged");
-        Invoke(nameof(SpawnFireball), 0.4f);
+        if (isDead || player == null) return;
+
+        cooldownTimer -= Time.deltaTime;
+
+        if (cooldownTimer <= 0f)
+        {
+            float distance = Vector2.Distance(transform.position, player.position);
+
+            // Invocation à 50% HP UNE SEULE FOIS
+            if (!hasSummoned && currentHealth <= maxHealth / 2)
+            {
+                StartCoroutine(Summon());
+                hasSummoned = true;
+            }
+            else
+            {
+                if (distance <= meleeRange)
+                    StartCoroutine(MeleeAttack());
+                else
+                    StartCoroutine(RangedAttack());
+            }
+
+            cooldownTimer = attackCooldown;
+        }
     }
 
-    void SpawnFireball()
+    // =====================
+    // ATTACKS
+    // =====================
+
+    IEnumerator RangedAttack()
     {
+        anim.SetTrigger("Ranged");
+        yield return new WaitForSeconds(0.4f);
         Instantiate(fireballPrefab, firePoint.position, Quaternion.identity);
     }
 
-    //  Corps à corps
-    void MeleeAttack()
+    IEnumerator MeleeAttack()
     {
-        GetComponent<Animator>().SetTrigger("Melee");
-        Invoke(nameof(ActivateMelee), 0.3f);
-    }
+        anim.SetTrigger("Melee");
+        yield return new WaitForSeconds(0.3f);
 
-    void ActivateMelee()
-    {
-        GameObject hit = Instantiate(meleeHitbox, meleePoint.position, Quaternion.identity);
+        GameObject hit = Instantiate(meleeHitboxPrefab, meleePoint.position, Quaternion.identity);
         Destroy(hit, 0.2f);
     }
 
-    //  Invocation
-    void Summon()
+    IEnumerator Summon()
     {
-        GetComponent<Animator>().SetTrigger("Summon");
-        Invoke(nameof(SpawnSkeletons), 0.5f);
-    }
+        anim.SetTrigger("Summon");
+        yield return new WaitForSeconds(0.5f);
 
-    void SpawnSkeletons()
-    {
         Instantiate(skeletonPrefab, leftSpawn.position, Quaternion.identity);
         Instantiate(skeletonPrefab, rightSpawn.position, Quaternion.identity);
     }
+
+    // =====================
+    // DAMAGE
+    // =====================
+
+    public void TakeDamage(int dmg)
+    {
+        if (isDead) return;
+
+        currentHealth -= dmg;
+
+        if (healthBar != null)
+            healthBar.value = currentHealth;
+
+        if (anim != null)
+            anim.SetTrigger("Hit");
+
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
+    }
+
+    void Die()
+    {
+        isDead = true;
+
+        anim.SetTrigger("Die");
+
+        this.enabled = false;
+
+        Destroy(gameObject, 2f);
+    }
 }
 
-// projectile
+
 using UnityEngine;
 
 public class Fireball : MonoBehaviour
 {
     public float speed = 6f;
-    public int damage = 10;
+    public int damage = 1;
 
     void Update()
     {
@@ -80,29 +154,38 @@ public class Fireball : MonoBehaviour
     {
         if (col.CompareTag("Player"))
         {
-            col.GetComponent<PlayerHealth>().TakeDamage(damage);
+            PlayerHealth ph = col.GetComponent<PlayerHealth>();
+            if (ph != null)
+            {
+                ph.TakeDamage(damage);
+            }
+
             Destroy(gameObject);
         }
     }
 }
 
-// hitbox corp a corp
+
 using UnityEngine;
 
 public class MeleeHitbox : MonoBehaviour
 {
-    public int damage = 15;
+    public int damage = 1;
 
     void OnTriggerEnter2D(Collider2D col)
     {
         if (col.CompareTag("Player"))
         {
-            col.GetComponent<PlayerHealth>().TakeDamage(damage);
+            PlayerHealth ph = col.GetComponent<PlayerHealth>();
+            if (ph != null)
+            {
+                ph.TakeDamage(damage);
+            }
         }
     }
 }
 
-//  mob invcation
+
 using UnityEngine;
 
 public class Skeleton : MonoBehaviour
@@ -115,206 +198,34 @@ public class Skeleton : MonoBehaviour
     }
 }
 
-// fonctionnement du boss
+
 using UnityEngine;
 
-public class BossAI : MonoBehaviour
+public class PlayerHealth : MonoBehaviour
 {
-    public Transform player;
-
-    [Header("Distances")]
-    public float meleeRange = 2f;
-    public float attackCooldown = 2f;
-
-    [Header("Health")]
-    public int maxHealth = 100;
+    public int maxHealth = 10;
     private int currentHealth;
-
-    [Header("Prefabs")]
-    public GameObject fireballPrefab;
-    public Transform firePoint;
-
-    public GameObject meleeHitbox;
-    public Transform meleePoint;
-
-    public GameObject skeletonPrefab;
-    public Transform leftSpawn;
-    public Transform rightSpawn;
-
-    private float cooldownTimer;
-    private bool hasSummoned = false;
-
-    private Animator anim;
 
     void Start()
     {
         currentHealth = maxHealth;
-        anim = GetComponent<Animator>();
     }
 
-    void Update()
-    {
-        if (player == null) return;
-
-        cooldownTimer -= Time.deltaTime;
-
-        float distance = Vector2.Distance(transform.position, player.position);
-
-        if (cooldownTimer <= 0)
-        {
-            //  Invocation si moins de 50% HP (UNE SEULE FOIS)
-            if (!hasSummoned && currentHealth <= maxHealth / 2)
-            {
-                Summon();
-                hasSummoned = true;
-            }
-            else
-            {
-                //  Choix attaque selon distance
-                if (distance <= meleeRange)
-                {
-                    MeleeAttack();
-                }
-                else
-                {
-                    RangedAttack();
-                }
-            }
-
-            cooldownTimer = attackCooldown;
-        }
-    }
-
-    //  Attaque à distance
-    void RangedAttack()
-    {
-        anim.SetTrigger("Ranged");
-        Invoke(nameof(SpawnFireball), 0.4f);
-    }
-
-    void SpawnFireball()
-    {
-        Instantiate(fireballPrefab, firePoint.position, Quaternion.identity);
-    }
-
-    //  Corps à corps
-    void MeleeAttack()
-    {
-        anim.SetTrigger("Melee");
-        Invoke(nameof(SpawnMelee), 0.3f);
-    }
-
-    void SpawnMelee()
-    {
-        GameObject hit = Instantiate(meleeHitbox, meleePoint.position, Quaternion.identity);
-        Destroy(hit, 0.2f);
-    }
-
-    //  Invocation
-    void Summon()
-    {
-        anim.SetTrigger("Summon");
-        Invoke(nameof(SpawnSkeletons), 0.5f);
-    }
-
-    void SpawnSkeletons()
-    {
-        Instantiate(skeletonPrefab, leftSpawn.position, Quaternion.identity);
-        Instantiate(skeletonPrefab, rightSpawn.position, Quaternion.identity);
-    }
-
-    //  Gestion des dégâts
     public void TakeDamage(int dmg)
     {
         currentHealth -= dmg;
-    }
-}
 
-// =====================
-// VIE DU BOSS + MORT
-// =====================
+        Debug.Log("Player HP: " + currentHealth);
 
-[Header("Boss Health")]
-public int maxHealth = 30;
-private int currentHealth;
-private bool isDead = false;
-
-void Awake()
-{
-    currentHealth = maxHealth;
-}
-
-public void TakeDamage(int dmg)
-{
-    if (isDead) return;
-
-    currentHealth -= dmg;
-
-    // feedback visuel
-    if (anim != null)
-        anim.SetTrigger("Hit");
-
-    if (currentHealth <= 0)
-    {
-        Die();
-    }
-}
-
-void Die()
-{
-    isDead = true;
-
-    // animation de mort
-    if (anim != null)
-        anim.SetTrigger("Die");
-
-    // désactive le boss (plus d’attaques)
-    this.enabled = false;
-
-    // supprime après 2 sec (temps anim)
-    Destroy(gameObject, 2f);
-}
-
-using UnityEngine.UI;
-
-// =====================
-// BARRE DE VIE UI
-// =====================
-
-[Header("Boss UI")]
-public Slider healthBar;
-
-void Start()
-{
-    currentHealth = maxHealth;
-
-    // initialise la barre
-    if (healthBar != null)
-    {
-        healthBar.maxValue = maxHealth;
-        healthBar.value = currentHealth;
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
     }
 
-    anim = GetComponent<Animator>();
-}
-
-public void TakeDamage(int dmg)
-{
-    if (isDead) return;
-
-    currentHealth -= dmg;
-
-    // update barre de vie
-    if (healthBar != null)
+    void Die()
     {
-        healthBar.value = currentHealth;
-    }
-
-    if (anim != null)
-        anim.SetTrigger("Hit");
-
-    if (currentHealth <= 0)
-    {
-        Die();
+        Debug.Log("Player died");
+        // reload scene ou game over
     }
 }
