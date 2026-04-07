@@ -2,14 +2,23 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 
+// =====================
+// BOSS AI
+// =====================
 public class BossAI : MonoBehaviour
 {
     [Header("Player")]
     public Transform player;
 
+    [Header("Detection")]
+    public float detectionRange = 10f;
+
     [Header("Attack")]
     public float meleeRange = 2f;
-    public float attackCooldown = 2f;
+    public float baseAttackCooldown = 2f;
+
+    private float attackCooldown;
+    private float cooldownTimer;
 
     [Header("Health")]
     public int maxHealth = 30;
@@ -32,12 +41,12 @@ public class BossAI : MonoBehaviour
     public Transform rightSpawn;
 
     private Animator anim;
-    private float cooldownTimer;
 
     void Start()
     {
         currentHealth = maxHealth;
         anim = GetComponent<Animator>();
+        attackCooldown = baseAttackCooldown;
 
         if (healthBar != null)
         {
@@ -50,12 +59,17 @@ public class BossAI : MonoBehaviour
     {
         if (isDead || player == null) return;
 
+        float distance = Vector2.Distance(transform.position, player.position);
+
+        // Détection du joueur
+        if (distance > detectionRange) return;
+
         cooldownTimer -= Time.deltaTime;
+
+        UpdatePhase();
 
         if (cooldownTimer <= 0f)
         {
-            float distance = Vector2.Distance(transform.position, player.position);
-
             // Invocation à 50% HP UNE SEULE FOIS
             if (!hasSummoned && currentHealth <= maxHealth / 2)
             {
@@ -75,6 +89,21 @@ public class BossAI : MonoBehaviour
     }
 
     // =====================
+    // PHASE SYSTEM
+    // =====================
+    void UpdatePhase()
+    {
+        if (currentHealth <= maxHealth / 2)
+        {
+            attackCooldown = baseAttackCooldown * 0.5f; // phase 2 plus rapide
+        }
+        else
+        {
+            attackCooldown = baseAttackCooldown;
+        }
+    }
+
+    // =====================
     // ATTACKS
     // =====================
 
@@ -82,6 +111,7 @@ public class BossAI : MonoBehaviour
     {
         anim.SetTrigger("Ranged");
         yield return new WaitForSeconds(0.4f);
+
         Instantiate(fireballPrefab, firePoint.position, Quaternion.identity);
     }
 
@@ -106,7 +136,6 @@ public class BossAI : MonoBehaviour
     // =====================
     // DAMAGE
     // =====================
-
     public void TakeDamage(int dmg)
     {
         if (isDead) return;
@@ -137,9 +166,9 @@ public class BossAI : MonoBehaviour
     }
 }
 
-
-using UnityEngine;
-
+// =====================
+// FIREBALL
+// =====================
 public class Fireball : MonoBehaviour
 {
     public float speed = 6f;
@@ -165,9 +194,9 @@ public class Fireball : MonoBehaviour
     }
 }
 
-
-using UnityEngine;
-
+// =====================
+// MELEE HITBOX
+// =====================
 public class MeleeHitbox : MonoBehaviour
 {
     public int damage = 1;
@@ -185,9 +214,9 @@ public class MeleeHitbox : MonoBehaviour
     }
 }
 
-
-using UnityEngine;
-
+// =====================
+// SKELETON
+// =====================
 public class Skeleton : MonoBehaviour
 {
     public float speed = 2f;
@@ -198,9 +227,9 @@ public class Skeleton : MonoBehaviour
     }
 }
 
-
-using UnityEngine;
-
+// =====================
+// PLAYER HEALTH
+// =====================
 public class PlayerHealth : MonoBehaviour
 {
     public int maxHealth = 10;
@@ -214,7 +243,6 @@ public class PlayerHealth : MonoBehaviour
     public void TakeDamage(int dmg)
     {
         currentHealth -= dmg;
-
         Debug.Log("Player HP: " + currentHealth);
 
         if (currentHealth <= 0)
@@ -226,6 +254,5 @@ public class PlayerHealth : MonoBehaviour
     void Die()
     {
         Debug.Log("Player died");
-        // reload scene ou game over
     }
 }
