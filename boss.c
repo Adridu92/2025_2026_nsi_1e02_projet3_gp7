@@ -229,3 +229,92 @@ public class BossAI : MonoBehaviour
         currentHealth -= dmg;
     }
 }
+
+// =====================
+// VIE DU BOSS + MORT
+// =====================
+
+[Header("Boss Health")]
+public int maxHealth = 30;
+private int currentHealth;
+private bool isDead = false;
+
+void Awake()
+{
+    currentHealth = maxHealth;
+}
+
+public void TakeDamage(int dmg)
+{
+    if (isDead) return;
+
+    currentHealth -= dmg;
+
+    // feedback visuel
+    if (anim != null)
+        anim.SetTrigger("Hit");
+
+    if (currentHealth <= 0)
+    {
+        Die();
+    }
+}
+
+void Die()
+{
+    isDead = true;
+
+    // animation de mort
+    if (anim != null)
+        anim.SetTrigger("Die");
+
+    // désactive le boss (plus d’attaques)
+    this.enabled = false;
+
+    // supprime après 2 sec (temps anim)
+    Destroy(gameObject, 2f);
+}
+
+using UnityEngine.UI;
+
+// =====================
+// BARRE DE VIE UI
+// =====================
+
+[Header("Boss UI")]
+public Slider healthBar;
+
+void Start()
+{
+    currentHealth = maxHealth;
+
+    // initialise la barre
+    if (healthBar != null)
+    {
+        healthBar.maxValue = maxHealth;
+        healthBar.value = currentHealth;
+    }
+
+    anim = GetComponent<Animator>();
+}
+
+public void TakeDamage(int dmg)
+{
+    if (isDead) return;
+
+    currentHealth -= dmg;
+
+    // update barre de vie
+    if (healthBar != null)
+    {
+        healthBar.value = currentHealth;
+    }
+
+    if (anim != null)
+        anim.SetTrigger("Hit");
+
+    if (currentHealth <= 0)
+    {
+        Die();
+    }
+}
