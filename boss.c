@@ -170,7 +170,7 @@ public class BossAI : MonoBehaviour
             }
             else
             {
-                // 🧠 Choix attaque selon distance
+                //  Choix attaque selon distance
                 if (distance <= meleeRange)
                 {
                     MeleeAttack();
